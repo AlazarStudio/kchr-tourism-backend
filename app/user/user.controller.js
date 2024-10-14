@@ -16,3 +16,15 @@ export const getUserProfile = asyncHandler(async (req, res) => {
 
 	res.json(user)
 })
+
+
+// @desc    Get user profile
+// @route   GET /api/users/profile
+// @access  Private
+export const getUsers = asyncHandler(async (req, res) => {
+  const user = await prisma.user.findMany({
+    select: UserFields,
+  });
+
+  res.json(user);
+});

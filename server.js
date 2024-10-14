@@ -1,15 +1,15 @@
+import cors from 'cors'
 import dotenv from 'dotenv'
 import express from 'express'
 import morgan from 'morgan'
 import path from 'path'
 
 import { errorHandler, notFound } from './app/middleware/error.middleware.js'
-import { prisma } from './app/prisma.js'
 
 import authRoutes from './app/auth/auth.routes.js'
+import newsRoutes from './app/news/news.routes.js'
+import { prisma } from './app/prisma.js'
 import userRoutes from './app/user/user.routes.js'
-
-import cors from 'cors'
 
 dotenv.config()
 
@@ -29,10 +29,12 @@ async function main() {
 	app.use('/api/auth', authRoutes)
 	app.use('/api/users', userRoutes)
 
+	app.use('/api/news', newsRoutes)
+
 	app.use(notFound)
 	app.use(errorHandler)
 
-	const PORT = process.env.PORT || 5000
+	const PORT = process.env.PORT || 4000
 
 	app.listen(
 		PORT,
