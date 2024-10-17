@@ -8,6 +8,7 @@ import path from 'path'
 import { errorHandler, notFound } from './app/middleware/error.middleware.js'
 
 import authRoutes from './app/auth/auth.routes.js'
+import bsRoutes from './app/bs/bs.routes.js'
 import newsRoutes from './app/news/news.routes.js'
 import { prisma } from './app/prisma.js'
 import projectRoutes from './app/projects/projects.routes.js'
@@ -41,7 +42,7 @@ const fileFilter = (req, file, cb) => {
 
 const upload = multer({
 	storage: storage,
-	limits: { fileSize: 1024 * 1024 * 12 }, // лимит размера файла 8MB
+	limits: { fileSize: 1024 * 1024 * 12 }, // лимит размера файла 12MB
 	fileFilter: fileFilter
 })
 
@@ -84,6 +85,7 @@ async function main() {
 	app.use('/api/users', userRoutes)
 	app.use('/api/news', newsRoutes)
 	app.use('/api/projects', projectRoutes)
+	app.use('/api/business-support', bsRoutes)
 
 	app.use(notFound)
 	app.use(errorHandler)

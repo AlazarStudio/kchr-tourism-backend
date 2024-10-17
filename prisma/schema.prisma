@@ -43,3 +43,14 @@ model Project {
   text      String
   images    String[]
 }
+
+model BS {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  type      String
+  title     String
+  date      DateTime
+  text      String
+  images    String[]
+}
