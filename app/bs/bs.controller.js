@@ -50,13 +50,17 @@ export const getBS = asyncHandler(async (req, res) => {
 export const createNewBS = asyncHandler(async (req, res) => {
 	const { type, title, date, text, images } = req.body
 
+	const imagePaths = images.map(image =>
+		typeof image === 'object' ? `/uploads/${image.rawFile.path}` : image
+	)
+
 	const bs = await prisma.bS.create({
 		data: {
 			type,
 			title,
 			date,
 			text,
-			images
+			images: imagePaths
 		}
 	})
 

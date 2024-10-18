@@ -54,3 +54,23 @@ model BS {
   text      String
   images    String[]
 }
+
+model Event {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  isCurrent Boolean? @default(false) @map("is_current")
+  title     String
+  date      DateTime
+  city      String
+  text      String
+  images    String[]
+}
+
+model AboutUs {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  text      String
+  images    String[]
+}

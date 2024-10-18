@@ -7,8 +7,10 @@ import path from 'path'
 
 import { errorHandler, notFound } from './app/middleware/error.middleware.js'
 
+import aboutUsRoutes from './app/aboutUs/aboutUs.routes.js'
 import authRoutes from './app/auth/auth.routes.js'
 import bsRoutes from './app/bs/bs.routes.js'
+import eventRoutes from './app/events/events.routes.js'
 import newsRoutes from './app/news/news.routes.js'
 import { prisma } from './app/prisma.js'
 import projectRoutes from './app/projects/projects.routes.js'
@@ -86,6 +88,8 @@ async function main() {
 	app.use('/api/news', newsRoutes)
 	app.use('/api/projects', projectRoutes)
 	app.use('/api/business-support', bsRoutes)
+	app.use('/api/events', eventRoutes)
+	app.use('/api/about-us', aboutUsRoutes)
 
 	app.use(notFound)
 	app.use(errorHandler)

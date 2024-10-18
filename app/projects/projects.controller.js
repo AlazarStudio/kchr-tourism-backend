@@ -53,12 +53,16 @@ export const getProject = asyncHandler(async (req, res) => {
 export const createNewProject = asyncHandler(async (req, res) => {
 	const { title, date, text, images } = req.body
 
+	const imagePaths = images.map(image =>
+		typeof image === 'object' ? `/uploads/${image.rawFile.path}` : image
+	)
+
 	const project = await prisma.project.create({
 		data: {
 			title,
 			date,
 			text,
-			images
+			images: imagePaths
 		}
 	})
 
