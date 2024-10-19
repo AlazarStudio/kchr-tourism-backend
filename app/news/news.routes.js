@@ -4,6 +4,7 @@ import { protect } from '../middleware/auth.middleware.js'
 
 import {
 	createNewNews,
+	createNewNewsWithParams,
 	deleteNews,
 	getAllNews,
 	getNews,
@@ -13,6 +14,8 @@ import {
 const router = express.Router()
 
 router.route('/').post(protect, createNewNews).get(getAllNews)
+
+router.route('/create').get(createNewNewsWithParams)
 
 router
 	.route('/:id')

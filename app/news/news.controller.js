@@ -72,6 +72,49 @@ export const createNewNews = asyncHandler(async (req, res) => {
 	res.json(news)
 })
 
+
+
+// @desc    Create new news via GET parameters
+// @route   GET /api/news/create
+// @access  Private
+export const createNewNewsWithParams = asyncHandler(async (req, res) => {
+	const { title, date, text, images } = req.query
+
+	if (!title || !date || !text || !images) {
+		res.status(400)
+		throw new Error('Missing required fields')
+	}
+
+	// Проверяем, существует ли новость с таким же заголовком и датой
+	const existingNews = await prisma.news.findFirst({
+		where: {
+			title: title,
+			date: date
+		}
+	})
+
+	if (existingNews) {
+		res.status(400)
+		throw new Error('News with this title and date already exists')
+	}
+
+	// Преобразуем строку с изображениями в массив (если изображения передаются в формате JSON-строки)
+	const imagePaths = JSON.parse(images)
+
+	const news = await prisma.news.create({
+		data: {
+			title,
+			date,
+			text,
+			images: imagePaths
+		}
+	})
+
+	res.json(news)
+})
+
+
+
 // @desc    Update news
 // @route 	PUT /api/news/:id
 // @access  Private
