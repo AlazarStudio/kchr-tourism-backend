@@ -6,6 +6,7 @@ import fs from 'fs'
 import morgan from 'morgan'
 import multer from 'multer'
 import path from 'path'
+import sharp from 'sharp'
 
 import { errorHandler, notFound } from './app/middleware/error.middleware.js'
 
@@ -26,32 +27,25 @@ const token = process.env.BOT_TOKEN
 const chatId = process.env.CHAT_ID
 const tagName = process.env.TAG_NAME
 
-// Настройка хранилища для загрузки файлов
-const storage = multer.diskStorage({
-	destination: function (req, file, cb) {
-		cb(null, 'uploads/')
-	},
-	filename: function (req, file, cb) {
-		cb(null, Date.now() + path.extname(file.originalname)) // уникальное имя файла
-	}
-})
-
-const fileFilter = (req, file, cb) => {
-	const fileTypes = /jpeg|jpg|png|gif|pdf|doc|docx/
-	const extname = fileTypes.test(path.extname(file.originalname).toLowerCase())
-	const mimetype = fileTypes.test(file.mimetype)
-
-	if (mimetype && extname) {
-		return cb(null, true)
-	} else {
-		cb('Ошибка: недопустимый тип файла!')
-	}
-}
+// Используем память для временного хранения файлов
+const storage = multer.memoryStorage()
 
 const upload = multer({
 	storage: storage,
-	limits: { fileSize: 1024 * 1024 * 12 }, // лимит размера файла 12MB
-	fileFilter: fileFilter
+	limits: { fileSize: 1024 * 1024 * 24 }, // лимит размера файла 24MB
+	fileFilter: (req, file, cb) => {
+		const fileTypes = /jpeg|jpg|png|gif/
+		const extname = fileTypes.test(
+			path.extname(file.originalname).toLowerCase()
+		)
+		const mimetype = fileTypes.test(file.mimetype)
+
+		if (mimetype && extname) {
+			return cb(null, true)
+		} else {
+			cb('Ошибка: недопустимый тип файла!')
+		}
+	}
 })
 
 app.use(
@@ -214,20 +208,31 @@ async function main() {
 
 	app.use(express.json())
 
-	// Маршрут для загрузки изображений
-	app.post('/uploads', (req, res) => {
-		upload.array('images', 20)(req, res, function (err) {
-			if (err instanceof multer.MulterError) {
-				return res.status(400).json({ message: err.message })
-			} else if (err) {
-				return res
-					.status(500)
-					.json({ message: 'Ошибка при загрузке файлов', error: err })
+	// Обновленный маршрут для загрузки файлов и конвертации в WebP
+	app.post('/uploads', upload.array('images', 20), async (req, res) => {
+		try {
+			const files = req.files
+			const filePaths = []
+
+			for (const file of files) {
+				const webpFilename = `${Date.now()}-${file.originalname.split('.')[0]}.webp`
+				const webpFilePath = path.join('uploads', webpFilename)
+
+				// Конвертация изображения в формат WebP с использованием sharp
+				await sharp(file.buffer)
+					.webp({ quality: 80 }) // Настройка качества WebP
+					.toFile(webpFilePath)
+
+				filePaths.push(`/uploads/${webpFilename}`)
 			}
 
-			const filePaths = req.files.map(file => `/uploads/${file.filename}`)
-			return res.json({ filePaths })
-		})
+			res.json({ filePaths })
+		} catch (error) {
+			console.error('Ошибка при конвертации изображений:', error)
+			res
+				.status(500)
+				.json({ message: 'Ошибка при конвертации изображений', error })
+		}
 	})
 
 	app.use('/api/auth', authRoutes)
