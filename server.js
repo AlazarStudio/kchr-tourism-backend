@@ -13,11 +13,15 @@ import { errorHandler, notFound } from './app/middleware/error.middleware.js'
 import aboutUsRoutes from './app/aboutUs/aboutUs.routes.js'
 import authRoutes from './app/auth/auth.routes.js'
 import bsRoutes from './app/bs/bs.routes.js'
+import documentRoutes from './app/docs/docs.routes.js'
 import eventRoutes from './app/events/events.routes.js'
+import groupRoutes from './app/group/group.routes.js'
 import newsRoutes from './app/news/news.routes.js'
 import { prisma } from './app/prisma.js'
 import projectRoutes from './app/projects/projects.routes.js'
+import storiesRoutes from './app/stories/stories.routes.js'
 import userRoutes from './app/user/user.routes.js'
+import visitRoutes from './app/visitPlaces/visitPlaces.routes.js'
 
 dotenv.config()
 
@@ -242,6 +246,10 @@ async function main() {
 	app.use('/api/business-support', bsRoutes)
 	app.use('/api/events', eventRoutes)
 	app.use('/api/about-us', aboutUsRoutes)
+	app.use('/api/visit', visitRoutes)
+	app.use('/api/stories', storiesRoutes)
+	app.use('/api/docs', documentRoutes)
+	app.use('/api/group', groupRoutes)
 
 	app.use(notFound)
 	app.use(errorHandler)
