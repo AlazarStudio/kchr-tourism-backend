@@ -42,7 +42,7 @@ export const getDocument = asyncHandler(async (req, res) => {
 	const document = await prisma.document.findUnique({
 		where: { id: +req.params.id },
 		include: {
-			group: {
+			Group: {
 				select: {
 					title: true
 				}

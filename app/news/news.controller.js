@@ -72,8 +72,6 @@ export const createNewNews = asyncHandler(async (req, res) => {
 	res.json(news)
 })
 
-
-
 // @desc    Create new news via GET parameters
 // @route   GET /api/news/create
 // @access  Private
@@ -88,8 +86,7 @@ export const createNewNewsWithParams = asyncHandler(async (req, res) => {
 	// Проверяем, существует ли новость с таким же заголовком и датой
 	const existingNews = await prisma.news.findFirst({
 		where: {
-			title: title,
-			date: date
+			title: title
 		}
 	})
 
@@ -112,8 +109,6 @@ export const createNewNewsWithParams = asyncHandler(async (req, res) => {
 
 	res.json(news)
 })
-
-
 
 // @desc    Update news
 // @route 	PUT /api/news/:id

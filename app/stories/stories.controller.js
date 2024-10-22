@@ -24,10 +24,7 @@ export const getAllStories = asyncHandler(async (req, res) => {
 		}
 	})
 
-	res.set(
-		'Content-Range',
-		`stories ${rangeStart}-${rangeEnd}/${totalStories}`
-	)
+	res.set('Content-Range', `stories ${rangeStart}-${rangeEnd}/${totalStories}`)
 	res.json(stories)
 })
 
@@ -56,6 +53,42 @@ export const createNewStories = asyncHandler(async (req, res) => {
 	const imagePaths = images.map(image =>
 		typeof image === 'object' ? `/uploads/${image.rawFile.path}` : image
 	)
+
+	const stories = await prisma.stories.create({
+		data: {
+			title,
+			date,
+			text,
+			images: imagePaths
+		}
+	})
+
+	res.json(stories)
+})
+
+// @desc    Create new stories via GET parameters
+// @route 	POST /api/stories
+// @access  Private
+export const createStoriesTelegram = asyncHandler(async (req, res) => {
+	const { title, date, text, images } = req.query
+
+	if (!title || !date || !text || !images) {
+		res.status(400)
+		throw new Error('Missing required fields')
+	}
+
+	const existingStories = await prisma.stories.findFirst({
+		where: {
+			title: title
+		}
+	})
+
+	if (existingStories) {
+		res.status(400)
+		throw new Error('News with this title and date already exists')
+	}
+
+	const imagePaths = JSON.parse(images)
 
 	const stories = await prisma.stories.create({
 		data: {
