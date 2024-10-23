@@ -79,7 +79,8 @@ export const createStoriesTelegram = asyncHandler(async (req, res) => {
 
 	const existingStories = await prisma.stories.findFirst({
 		where: {
-			title: title
+			title: title,
+			date: date
 		}
 	})
 

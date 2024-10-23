@@ -86,7 +86,8 @@ export const createNewNewsWithParams = asyncHandler(async (req, res) => {
 	// Проверяем, существует ли новость с таким же заголовком и датой
 	const existingNews = await prisma.news.findFirst({
 		where: {
-			title: title
+			title: title,
+			date: date
 		}
 	})
 

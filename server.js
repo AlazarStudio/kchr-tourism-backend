@@ -3,11 +3,12 @@ import cors from 'cors'
 import dotenv from 'dotenv'
 import express from 'express'
 import fs from 'fs'
+import https from 'https'
 import morgan from 'morgan'
 import multer from 'multer'
 import path from 'path'
 import sharp from 'sharp'
-import https from 'https'
+
 import { errorHandler, notFound } from './app/middleware/error.middleware.js'
 
 import aboutUsRoutes from './app/aboutUs/aboutUs.routes.js'
@@ -361,21 +362,38 @@ async function main() {
 	app.use(express.json())
 
 	// Обновленный маршрут для загрузки файлов и конвертации в WebP
+	// Обновленный маршрут для загрузки файлов и конвертации в WebP
 	app.post('/uploads', upload.array('images', 20), async (req, res) => {
 		try {
 			const files = req.files
 			const filePaths = []
 
 			for (const file of files) {
-				const webpFilename = `${Date.now()}-${file.originalname.split('.')[0]}.webp`
-				const webpFilePath = path.join('uploads', webpFilename)
+				// Определяем расширение файла
+				const ext = path.extname(file.originalname).toLowerCase()
 
-				// Конвертация изображения в формат WebP с использованием sharp
-				await sharp(file.buffer)
-					.webp({ quality: 80 }) // Настройка качества WebP
-					.toFile(webpFilePath)
+				// Проверяем, является ли файл GIF
+				if (ext === '.gif') {
+					// Сохраняем GIF без конвертации
+					const gifFilename = `${Date.now()}-${file.originalname}`
+					const gifFilePath = path.join('uploads', gifFilename)
 
-				filePaths.push(`/uploads/${webpFilename}`)
+					// Сохраняем GIF в папку 'uploads'
+					fs.writeFileSync(gifFilePath, file.buffer)
+
+					filePaths.push(`/uploads/${gifFilename}`)
+				} else {
+					// Если это не GIF, конвертируем в WebP
+					const webpFilename = `${Date.now()}-${file.originalname.split('.')[0]}.webp`
+					const webpFilePath = path.join('uploads', webpFilename)
+
+					// Конвертация изображения в формат WebP с использованием sharp
+					await sharp(file.buffer)
+						.webp({ quality: 80 }) // Настройка качества WebP
+						.toFile(webpFilePath)
+
+					filePaths.push(`/uploads/${webpFilename}`)
+				}
 			}
 
 			res.json({ filePaths })
@@ -494,13 +512,15 @@ async function main() {
 	app.use(notFound)
 	app.use(errorHandler)
 
+	// const PORT = process.env.PORT || 4000
+
 	const PORT = process.env.PORT || 443
 
 	const sslOptions = {
 		key: fs.readFileSync('../../../etc/letsencrypt/live/backend.kch-tourism.ru/privkey.pem'),
 		cert: fs.readFileSync('../../../etc/letsencrypt/live/backend.kch-tourism.ru/fullchain.pem')
 	};
-	
+
 	https.createServer(sslOptions, app).listen(PORT, () => {
 		console.log(`HTTPS server running on port ${PORT}`);
 	});
