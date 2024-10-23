@@ -7,7 +7,7 @@ import morgan from 'morgan'
 import multer from 'multer'
 import path from 'path'
 import sharp from 'sharp'
-
+import https from 'https'
 import { errorHandler, notFound } from './app/middleware/error.middleware.js'
 
 import aboutUsRoutes from './app/aboutUs/aboutUs.routes.js'
@@ -494,7 +494,16 @@ async function main() {
 	app.use(notFound)
 	app.use(errorHandler)
 
-	const PORT = process.env.PORT || 4000
+	const PORT = process.env.PORT || 443
+
+	const sslOptions = {
+		key: fs.readFileSync('../../../etc/letsencrypt/live/backend.kch-tourism.ru/privkey.pem'),
+		cert: fs.readFileSync('../../../etc/letsencrypt/live/backend.kch-tourism.ru/fullchain.pem')
+	};
+	
+	https.createServer(sslOptions, app).listen(443, () => {
+		console.log(`HTTPS server running on port ${443}`);
+	});
 
 	app.listen(
 		PORT,
