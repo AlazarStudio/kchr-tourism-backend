@@ -501,14 +501,14 @@ async function main() {
 		cert: fs.readFileSync('../../../etc/letsencrypt/live/backend.kch-tourism.ru/fullchain.pem')
 	};
 	
-	https.createServer(sslOptions, app).listen(443, () => {
-		console.log(`HTTPS server running on port ${443}`);
+	https.createServer(sslOptions, app).listen(PORT, () => {
+		console.log(`HTTPS server running on port ${PORT}`);
 	});
 
-	app.listen(
-		PORT,
-		console.log(`Server running in ${process.env.NODE_ENV} on port ${PORT}`)
-	)
+	// app.listen(
+	// 	PORT,
+	// 	console.log(`Server running in ${process.env.NODE_ENV} on port ${PORT}`)
+	// )
 }
 
 main()
