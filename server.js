@@ -143,7 +143,7 @@ app.get('/api/news/telegram', async (req, res) => {
 				update =>
 					update.channel_post && update.channel_post.chat.id !== -1002152382917
 			)
-			console.log('Фильтрованные сообщения:', messages)
+			// console.log('Фильтрованные сообщения:', messages)
 
 			const uploadsDir = path.join(path.resolve(), 'uploads')
 			if (!fs.existsSync(uploadsDir)) {
@@ -260,7 +260,7 @@ app.get('/api/stories/telegram', async (req, res) => {
 				update =>
 					update.channel_post && update.channel_post.chat.id !== -1002152382917
 			)
-			console.log('Фильтрованные сообщения:', messages)
+			// console.log('Фильтрованные сообщения:', messages)
 
 			const uploadsDir = path.join(path.resolve(), 'uploads')
 			if (!fs.existsSync(uploadsDir)) {
