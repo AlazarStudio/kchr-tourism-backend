@@ -139,7 +139,11 @@ app.get('/api/news/telegram', async (req, res) => {
 		// console.log(response)
 
 		if (response.data.ok) {
-			const messages = response.data.result
+			const messages = response.data.result.filter(
+				update =>
+					update.channel_post && update.channel_post.chat.id !== -1002152382917
+			)
+			console.log('Фильтрованные сообщения:', messages)
 
 			const uploadsDir = path.join(path.resolve(), 'uploads')
 			if (!fs.existsSync(uploadsDir)) {
@@ -252,7 +256,11 @@ app.get('/api/stories/telegram', async (req, res) => {
 		// console.log(response)
 
 		if (response.data.ok) {
-			const messages = response.data.result
+			const messages = response.data.result.filter(
+				update =>
+					update.channel_post && update.channel_post.chat.id !== -1002152382917
+			)
+			console.log('Фильтрованные сообщения:', messages)
 
 			const uploadsDir = path.join(path.resolve(), 'uploads')
 			if (!fs.existsSync(uploadsDir)) {
@@ -517,13 +525,17 @@ async function main() {
 	const PORT = process.env.PORT || 443
 
 	const sslOptions = {
-		key: fs.readFileSync('../../../etc/letsencrypt/live/backend.kch-tourism.ru/privkey.pem'),
-		cert: fs.readFileSync('../../../etc/letsencrypt/live/backend.kch-tourism.ru/fullchain.pem')
-	};
+		key: fs.readFileSync(
+			'../../../etc/letsencrypt/live/backend.kch-tourism.ru/privkey.pem'
+		),
+		cert: fs.readFileSync(
+			'../../../etc/letsencrypt/live/backend.kch-tourism.ru/fullchain.pem'
+		)
+	}
 
 	https.createServer(sslOptions, app).listen(PORT, () => {
-		console.log(`HTTPS server running on port ${PORT}`);
-	});
+		console.log(`HTTPS server running on port ${PORT}`)
+	})
 
 	// app.listen(
 	// 	PORT,
