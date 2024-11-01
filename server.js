@@ -176,13 +176,13 @@ app.get('/api/news/telegram', async (req, res) => {
 					}
 
 					caption = caption.replace(tagName, '').trim()
-					const parts = caption.split('\n\n')
+					const parts = caption.split('\n\n\n')
 					let title = ''
 					let text = ''
 
 					if (parts.length > 1) {
 						title = parts[0]
-						text = parts.slice(1).join('\n\n')
+						text = parts.slice(1).join('\n\n\n')
 					}
 
 					const photos = await Promise.all(
@@ -293,13 +293,13 @@ app.get('/api/stories/telegram', async (req, res) => {
 					}
 
 					caption = caption.replace(tagStories, '').trim()
-					const parts = caption.split('\n\n')
+					const parts = caption.split('\n\n\n')
 					let title = ''
 					let text = ''
 
 					if (parts.length > 1) {
 						title = parts[0]
-						text = parts.slice(1).join('\n\n')
+						text = parts.slice(1).join('\n\n\n')
 					}
 
 					const photos = await Promise.all(
