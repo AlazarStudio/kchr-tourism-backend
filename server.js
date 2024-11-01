@@ -182,7 +182,7 @@ app.get('/api/news/telegram', async (req, res) => {
 
 					if (parts.length > 1) {
 						title = parts[0]
-						text = parts.slice(1).join('\n\n\n')
+						text = parts.slice(1).join('\n\n\n').replace(/\n/g, '<br>')
 					}
 
 					const photos = await Promise.all(
