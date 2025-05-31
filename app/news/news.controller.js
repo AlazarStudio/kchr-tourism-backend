@@ -6,32 +6,32 @@ import { prisma } from '../prisma.js'
 // @route   GET /api/news
 // @access  Private
 export const getAllNews = asyncHandler(async (req, res) => {
-	const { range, sort, filter } = req.query
+  const { range, sort, filter, all } = req.query;
 
-	// Пример сортировки (если sort выглядит как ['createdAt', 'ASC'])
-	const sortField = sort ? JSON.parse(sort)[0] : 'createdAt'
-	const sortOrder = sort ? JSON.parse(sort)[1].toLowerCase() : 'desc' // Приводим к нижнему регистру для Prisma
+  if (all === 'true') {
+    // отдаём _все_ записи, игнорируем range
+    const news = await prisma.news.findMany({
+      orderBy: {
+        date: 'desc'
+      }
+    });
+    return res.json(news);
+  }
 
-	// Пример обработки диапазона для пагинации
-	const rangeStart = range ? JSON.parse(range)[0] : 0
-	const rangeEnd = range ? JSON.parse(range)[1] : 9
-
-	// Получаем общее количество новостей
-	const totalNews = await prisma.news.count()
-
-	// Получаем новости с пагинацией
-	const news = await prisma.news.findMany({
-		skip: rangeStart,
-		take: rangeEnd - rangeStart + 1, // количество записей для пагинации
-		orderBy: {
-			[sortField]: sortOrder // Используем переменные для поля и направления сортировки
-		}
-	})
-
-	// Устанавливаем заголовок Content-Range
-	res.set('Content-Range', `news ${rangeStart}-${rangeEnd}/${totalNews}`)
-	res.json(news)
-})
+  // Старый код пагинации:
+  const sortField = sort ? JSON.parse(sort)[0] : 'date';
+  const sortOrder = sort ? JSON.parse(sort)[1].toLowerCase() : 'desc';
+  const rangeStart = range ? JSON.parse(range)[0] : 0;
+  const rangeEnd = range ? JSON.parse(range)[1] : 9;
+  const totalNews = await prisma.news.count();
+  const news = await prisma.news.findMany({
+    skip: rangeStart,
+    take: rangeEnd - rangeStart + 1,
+    orderBy: { [sortField]: sortOrder }
+  });
+  res.set('Content-Range', `news ${rangeStart}-${rangeEnd}/${totalNews}`);
+  res.json(news);
+});
 
 // @desc    Get news
 // @route   GET /api/news/:id
