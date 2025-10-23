@@ -52,7 +52,7 @@ export const registerUser = asyncHandler(async (req, res) => {
 			login,
 			email,
 			password: await hash(password),
-			name: faker.name.fullName()
+			name: faker.person.fullName()
 		},
 		select: UserFields
 	})
