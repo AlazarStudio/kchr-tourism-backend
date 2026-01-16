@@ -41,7 +41,7 @@ const upload = multer({
 	storage: storage,
 	limits: { fileSize: 1024 * 1024 * 48 }, // лимит размера файла 48MB
 	fileFilter: (req, file, cb) => {
-		const fileTypes = /jpeg|jpg|png|gif/
+		const fileTypes = /jpeg|jpg|png|gif|heic|heif/
 		const extname = fileTypes.test(
 			path.extname(file.originalname).toLowerCase()
 		)
