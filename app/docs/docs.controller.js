@@ -6,10 +6,26 @@ import { prisma } from '../prisma.js'
 // @route   GET /api/docs
 // @access  Private
 export const getDocuments = asyncHandler(async (req, res) => {
-	const { range, sort, filter } = req.query
+	const { range, sort, filter, all } = req.query
 
 	const sortField = sort ? JSON.parse(sort)[0] : 'id'
 	const sortOrder = sort ? JSON.parse(sort)[1].toLowerCase() : 'desc'
+
+	if (all === 'true') {
+		const docs = await prisma.document.findMany({
+			orderBy: {
+				[sortField]: sortOrder
+			},
+			include: {
+				Group: {
+					select: {
+						title: true
+					}
+				}
+			}
+		})
+		return res.json(docs)
+	}
 
 	const rangeStart = range ? JSON.parse(range)[0] : 0
 	const rangeEnd = range ? JSON.parse(range)[1] : 9
