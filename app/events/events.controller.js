@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client'
 import asyncHandler from 'express-async-handler'
 
 import { prisma } from '../prisma.js'
@@ -16,6 +17,7 @@ export const getEvents = asyncHandler(async (req, res) => {
 
 	const parsedFilter = filter ? JSON.parse(filter) : {}
 	const where = {}
+	const month = parsedFilter?.month ? Number(parsedFilter.month) : null
 
 	if (parsedFilter?.city) {
 		where.city = parsedFilter.city
@@ -29,17 +31,60 @@ export const getEvents = asyncHandler(async (req, res) => {
 		where.isCurrent = isCurrent
 	}
 
-	if (parsedFilter?.month) {
-		const month = Number(parsedFilter.month)
-		if (!Number.isNaN(month) && month >= 1 && month <= 12) {
-			const year = Number(parsedFilter.year) || new Date().getFullYear()
-			const rangeStartDate = new Date(year, month - 1, 1)
-			const rangeEndDate = new Date(year, month, 1)
-			where.date = {
-				gte: rangeStartDate,
-				lt: rangeEndDate
-			}
+	if (month && month >= 1 && month <= 12) {
+		const conditions = [Prisma.sql`EXTRACT(MONTH FROM "date") = ${month}`]
+
+		if (parsedFilter?.city) {
+			conditions.push(Prisma.sql`"city" = ${parsedFilter.city}`)
 		}
+
+		if (parsedFilter?.isCurrent !== undefined) {
+			conditions.push(Prisma.sql`"is_current" = ${where.isCurrent}`)
+		}
+
+		const whereSql = Prisma.join(conditions, Prisma.sql` AND `)
+		const take = rangeEnd - rangeStart + 1
+		const skip = rangeStart
+
+		const sortFieldMap = {
+			id: '"id"',
+			createdAt: '"created_at"',
+			updatedAt: '"updated_at"',
+			isCurrent: '"is_current"',
+			title: '"title"',
+			date: '"date"',
+			city: '"city"'
+		}
+		const sortColumn = sortFieldMap[sortField] || '"created_at"'
+		const sortDirection = sortOrder === 'asc' ? 'ASC' : 'DESC'
+
+		const countResult = await prisma.$queryRaw`
+			SELECT COUNT(*)::int AS count
+			FROM "Event"
+			WHERE ${whereSql}
+		`
+		const totalEvents = Number(countResult[0]?.count || 0)
+
+		const events = await prisma.$queryRaw`
+			SELECT
+				"id",
+				"created_at" AS "createdAt",
+				"updated_at" AS "updatedAt",
+				"is_current" AS "isCurrent",
+				"title",
+				"date",
+				"city",
+				"text",
+				"images"
+			FROM "Event"
+			WHERE ${whereSql}
+			ORDER BY ${Prisma.raw(`${sortColumn} ${sortDirection}`)}
+			LIMIT ${take}
+			OFFSET ${skip}
+		`
+
+		res.set('Content-Range', `events ${rangeStart}-${rangeEnd}/${totalEvents}`)
+		return res.json(events)
 	}
 
 	const totalEvents = await prisma.event.count({ where })
