@@ -1,4 +1,3 @@
-import { Prisma } from '@prisma/client'
 import asyncHandler from 'express-async-handler'
 
 import { prisma } from '../prisma.js'
@@ -18,31 +17,36 @@ export const getEvents = asyncHandler(async (req, res) => {
 	const parsedFilter = filter ? JSON.parse(filter) : {}
 	const where = {}
 	const month = parsedFilter?.month ? Number(parsedFilter.month) : null
+	const isCurrent =
+		parsedFilter?.isCurrent !== undefined
+			? typeof parsedFilter.isCurrent === 'string'
+				? parsedFilter.isCurrent === 'true'
+				: Boolean(parsedFilter.isCurrent)
+			: undefined
 
 	if (parsedFilter?.city) {
 		where.city = parsedFilter.city
 	}
 
-	if (parsedFilter?.isCurrent !== undefined) {
-		const isCurrent =
-			typeof parsedFilter.isCurrent === 'string'
-				? parsedFilter.isCurrent === 'true'
-				: Boolean(parsedFilter.isCurrent)
+	if (isCurrent !== undefined) {
 		where.isCurrent = isCurrent
 	}
 
 	if (month && month >= 1 && month <= 12) {
-		const conditions = [Prisma.sql`EXTRACT(MONTH FROM "date") = ${month}`]
+		const conditions = ['EXTRACT(MONTH FROM "date") = $1']
+		const values = [month]
 
 		if (parsedFilter?.city) {
-			conditions.push(Prisma.sql`"city" = ${parsedFilter.city}`)
+			conditions.push(`"city" = $${values.length + 1}`)
+			values.push(parsedFilter.city)
 		}
 
-		if (parsedFilter?.isCurrent !== undefined) {
-			conditions.push(Prisma.sql`"is_current" = ${where.isCurrent}`)
+		if (isCurrent !== undefined) {
+			conditions.push(`"is_current" = $${values.length + 1}`)
+			values.push(isCurrent)
 		}
 
-		const whereSql = Prisma.join(conditions, Prisma.sql` AND `)
+		const whereSql = conditions.join(' AND ')
 		const take = rangeEnd - rangeStart + 1
 		const skip = rangeStart
 
@@ -58,14 +62,11 @@ export const getEvents = asyncHandler(async (req, res) => {
 		const sortColumn = sortFieldMap[sortField] || '"created_at"'
 		const sortDirection = sortOrder === 'asc' ? 'ASC' : 'DESC'
 
-		const countResult = await prisma.$queryRaw`
-			SELECT COUNT(*)::int AS count
-			FROM "Event"
-			WHERE ${whereSql}
-		`
+		const countQuery = `SELECT COUNT(*)::int AS count FROM "Event" WHERE ${whereSql}`
+		const countResult = await prisma.$queryRawUnsafe(countQuery, ...values)
 		const totalEvents = Number(countResult[0]?.count || 0)
 
-		const events = await prisma.$queryRaw`
+		const dataQuery = `
 			SELECT
 				"id",
 				"created_at" AS "createdAt",
@@ -78,10 +79,16 @@ export const getEvents = asyncHandler(async (req, res) => {
 				"images"
 			FROM "Event"
 			WHERE ${whereSql}
-			ORDER BY ${Prisma.raw(`${sortColumn} ${sortDirection}`)}
-			LIMIT ${take}
-			OFFSET ${skip}
+			ORDER BY ${sortColumn} ${sortDirection}
+			LIMIT $${values.length + 1}
+			OFFSET $${values.length + 2}
 		`
+		const events = await prisma.$queryRawUnsafe(
+			dataQuery,
+			...values,
+			take,
+			skip
+		)
 
 		res.set('Content-Range', `events ${rangeStart}-${rangeEnd}/${totalEvents}`)
 		return res.json(events)
