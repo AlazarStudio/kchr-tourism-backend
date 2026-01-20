@@ -6,31 +6,30 @@ import { prisma } from '../prisma.js'
 // @route   GET /api/news
 // @access  Private
 export const getAllNews = asyncHandler(async (req, res) => {
-  const { range, sort, filter, all } = req.query;
+	const { range, sort, filter } = req.query
 
-  if (all === 'true') {
-    // отдаём _все_ записи, игнорируем range
-    const news = await prisma.news.findMany({
-      orderBy: {
-        date: 'desc'
-      }
-    });
-    return res.json(news);
-  }
+	const sortField = sort ? JSON.parse(sort)[0] : 'date'
+	const sortOrder = sort ? JSON.parse(sort)[1].toLowerCase() : 'desc'
+	const rangeStart = range ? JSON.parse(range)[0] : 0
+	const rangeEnd = range ? JSON.parse(range)[1] : 9
 
-  // Старый код пагинации:
-  const sortField = sort ? JSON.parse(sort)[0] : 'date';
-  const sortOrder = sort ? JSON.parse(sort)[1].toLowerCase() : 'desc';
-  const rangeStart = range ? JSON.parse(range)[0] : 0;
-  const rangeEnd = range ? JSON.parse(range)[1] : 9;
-  const totalNews = await prisma.news.count();
-  const news = await prisma.news.findMany({
-    skip: rangeStart,
-    take: rangeEnd - rangeStart + 1,
-    orderBy: { [sortField]: sortOrder }
-  });
-  res.set('Content-Range', `news ${rangeStart}-${rangeEnd}/${totalNews}`);
-  res.json(news);
+	const parsedFilter = filter ? JSON.parse(filter) : {}
+	const where = {}
+
+	if (parsedFilter?.type) {
+		where.type = parsedFilter.type
+	}
+
+	const totalNews = await prisma.news.count({ where })
+	const news = await prisma.news.findMany({
+		skip: rangeStart,
+		take: rangeEnd - rangeStart + 1,
+		orderBy: { [sortField]: sortOrder },
+		where
+	})
+
+	res.set('Content-Range', `news ${rangeStart}-${rangeEnd}/${totalNews}`)
+	res.json(news)
 });
 
 // @desc    Get news
