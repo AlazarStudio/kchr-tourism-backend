@@ -14,14 +14,43 @@ export const getEvents = asyncHandler(async (req, res) => {
 	const rangeStart = range ? JSON.parse(range)[0] : 0
 	const rangeEnd = range ? JSON.parse(range)[1] : 9
 
-	const totalEvents = await prisma.event.count()
+	const parsedFilter = filter ? JSON.parse(filter) : {}
+	const where = {}
+
+	if (parsedFilter?.city) {
+		where.city = parsedFilter.city
+	}
+
+	if (parsedFilter?.isCurrent !== undefined) {
+		const isCurrent =
+			typeof parsedFilter.isCurrent === 'string'
+				? parsedFilter.isCurrent === 'true'
+				: Boolean(parsedFilter.isCurrent)
+		where.isCurrent = isCurrent
+	}
+
+	if (parsedFilter?.month) {
+		const month = Number(parsedFilter.month)
+		if (!Number.isNaN(month) && month >= 1 && month <= 12) {
+			const year = Number(parsedFilter.year) || new Date().getFullYear()
+			const rangeStartDate = new Date(year, month - 1, 1)
+			const rangeEndDate = new Date(year, month, 1)
+			where.date = {
+				gte: rangeStartDate,
+				lt: rangeEndDate
+			}
+		}
+	}
+
+	const totalEvents = await prisma.event.count({ where })
 
 	const events = await prisma.event.findMany({
 		skip: rangeStart,
 		take: rangeEnd - rangeStart + 1,
 		orderBy: {
 			[sortField]: sortOrder
-		}
+		},
+		where
 	})
 
 	res.set('Content-Range', `events ${rangeStart}-${rangeEnd}/${totalEvents}`)

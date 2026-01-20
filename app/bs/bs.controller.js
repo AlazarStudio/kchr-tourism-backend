@@ -14,14 +14,22 @@ export const getAllBS = asyncHandler(async (req, res) => {
 	const rangeStart = range ? JSON.parse(range)[0] : 0
 	const rangeEnd = range ? JSON.parse(range)[1] : 9
 
-	const totalBS = await prisma.bS.count()
+	const parsedFilter = filter ? JSON.parse(filter) : {}
+	const where = {}
+
+	if (parsedFilter?.type) {
+		where.type = parsedFilter.type
+	}
+
+	const totalBS = await prisma.bS.count({ where })
 
 	const bs = await prisma.bS.findMany({
 		skip: rangeStart,
 		take: rangeEnd - rangeStart + 1,
 		orderBy: {
 			[sortField]: sortOrder
-		}
+		},
+		where
 	})
 
 	res.set('Content-Range', `bs ${rangeStart}-${rangeEnd}/${totalBS}`)

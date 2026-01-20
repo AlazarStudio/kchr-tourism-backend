@@ -25,7 +25,7 @@ export const getAllNews = asyncHandler(async (req, res) => {
 		skip: rangeStart,
 		take: rangeEnd - rangeStart + 1,
 		orderBy: { [sortField]: sortOrder },
-		where
+	where
 	})
 
 	res.set('Content-Range', `news ${rangeStart}-${rangeEnd}/${totalNews}`)
