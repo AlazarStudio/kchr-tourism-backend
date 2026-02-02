@@ -63,7 +63,7 @@ sudo npm install pm2 -g
 
 ```bash
 # Запуск приложения
-pm2 start ecosystem.config.js
+pm2 start ecosystem.config.cjs
 
 # Просмотр статуса
 pm2 list
@@ -204,7 +204,7 @@ sudo chmod 600 /etc/letsencrypt/live/backend.kch-tourism.ru/privkey.pem
    free -h
    ```
 
-3. Увеличьте лимит памяти в `ecosystem.config.js` если нужно:
+3. Увеличьте лимит памяти в `ecosystem.config.cjs` если нужно:
    ```javascript
    max_memory_restart: '2G'
    ```
