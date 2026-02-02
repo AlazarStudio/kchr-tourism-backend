@@ -524,18 +524,43 @@ async function main() {
 
 	const PORT = process.env.PORT || 443
 
-	const sslOptions = {
-		key: fs.readFileSync(
-			'../../../etc/letsencrypt/live/backend.kch-tourism.ru/privkey.pem'
-		),
-		cert: fs.readFileSync(
-			'../../../etc/letsencrypt/live/backend.kch-tourism.ru/fullchain.pem'
-		)
-	}
+	// Пути к SSL сертификатам (можно вынести в .env)
+	const SSL_KEY_PATH =
+		process.env.SSL_KEY_PATH ||
+		'../../../etc/letsencrypt/live/backend.kch-tourism.ru/privkey.pem'
+	const SSL_CERT_PATH =
+		process.env.SSL_CERT_PATH ||
+		'../../../etc/letsencrypt/live/backend.kch-tourism.ru/fullchain.pem'
 
-	https.createServer(sslOptions, app).listen(PORT, () => {
-		console.log(`HTTPS server running on port ${PORT}`)
-	})
+	try {
+		// Проверяем существование SSL сертификатов
+		if (!fs.existsSync(SSL_KEY_PATH)) {
+			throw new Error(`SSL key file not found: ${SSL_KEY_PATH}`)
+		}
+		if (!fs.existsSync(SSL_CERT_PATH)) {
+			throw new Error(`SSL certificate file not found: ${SSL_CERT_PATH}`)
+		}
+
+		const sslOptions = {
+			key: fs.readFileSync(SSL_KEY_PATH),
+			cert: fs.readFileSync(SSL_CERT_PATH)
+		}
+
+		https.createServer(sslOptions, app).listen(PORT, () => {
+			console.log(`HTTPS server running on port ${PORT}`)
+		})
+	} catch (error) {
+		console.error('Error loading SSL certificates:', error.message)
+		console.error(
+			'Falling back to HTTP server (not recommended for production)'
+		)
+		// Fallback на HTTP, если SSL не настроен
+		app.listen(PORT === 443 ? 4000 : PORT, () => {
+			console.log(
+				`HTTP server running on port ${PORT === 443 ? 4000 : PORT} (WARNING: Not secure!)`
+			)
+		})
+	}
 
 	// app.listen(
 	// 	PORT,
@@ -543,12 +568,32 @@ async function main() {
 	// )
 }
 
-main()
-	.then(async () => {
-		await prisma.$disconnect()
-	})
-	.catch(async e => {
-		console.error(e)
-		await prisma.$disconnect()
-		process.exit(1)
-	})
+// Обработка необработанных исключений
+process.on('uncaughtException', error => {
+	console.error('Uncaught Exception:', error)
+	// Не завершаем процесс - пусть PM2 решает
+})
+
+process.on('unhandledRejection', (reason, promise) => {
+	console.error('Unhandled Rejection at:', promise, 'reason:', reason)
+	// Не завершаем процесс - пусть PM2 решает
+})
+
+// Graceful shutdown
+process.on('SIGTERM', async () => {
+	console.log('SIGTERM received, closing server gracefully...')
+	await prisma.$disconnect()
+	process.exit(0)
+})
+
+process.on('SIGINT', async () => {
+	console.log('SIGINT received, closing server gracefully...')
+	await prisma.$disconnect()
+	process.exit(0)
+})
+
+main().catch(async e => {
+	console.error('Failed to start server:', e)
+	await prisma.$disconnect()
+	process.exit(1)
+})
