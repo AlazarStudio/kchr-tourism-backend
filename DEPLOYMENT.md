@@ -6,13 +6,6 @@
 - Node.js (версия 16 или выше)
 - npm
 - PostgreSQL
-- ffmpeg (с libvpx-vp9 и libopus для конвертации видео в WebM)
-
-  ```bash
-  # Ubuntu/Debian
-  sudo apt install ffmpeg
-  ```
-
 - Доступ к серверу через SSH
 
 ## Шаг 1: Клонирование проекта

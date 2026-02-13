@@ -2,12 +2,10 @@ import axios from 'axios'
 import cors from 'cors'
 import dotenv from 'dotenv'
 import express from 'express'
-import ffmpeg from 'fluent-ffmpeg'
 import fs from 'fs'
 import https from 'https'
 import morgan from 'morgan'
 import multer from 'multer'
-import os from 'os'
 import path from 'path'
 import sharp from 'sharp'
 
@@ -434,7 +432,7 @@ async function main() {
 		}
 	})
 
-	// Загрузка видео с конвертацией в WebM
+	// Загрузка видео (сохранение оригинала с безопасным именем, без конвертации)
 	app.post(
 		'/upload-video',
 		uploadVideo.array('videos', 10),
@@ -454,49 +452,21 @@ async function main() {
 				const baseTimestamp = Date.now()
 				for (let i = 0; i < files.length; i++) {
 					const file = files[i]
-					const tempExt = path.extname(file.originalname).toLowerCase() || '.mp4'
-					const tempFilename = `temp-${baseTimestamp}-${i}${tempExt}`
-					const tempPath = path.join(os.tmpdir(), tempFilename)
-					const webmFilename = `${baseTimestamp}-${i}.webm`
-					const webmPath = path.join(uploadsDir, webmFilename)
-					const fallbackFilename = `${baseTimestamp}-${i}${tempExt}`
-					const fallbackPath = path.join(uploadsDir, fallbackFilename)
+					const ext = path.extname(file.originalname).toLowerCase() || '.mp4'
+					const safeExt = /\.(mp4|webm|mov|avi|mkv)$/.test(ext) ? ext : '.mp4'
+					const filename = `${baseTimestamp}-${i}${safeExt}`
+					const filePath = path.join(uploadsDir, filename)
 
-					fs.writeFileSync(tempPath, file.buffer)
-
-					try {
-						await new Promise((resolve, reject) => {
-							ffmpeg(tempPath)
-								.outputOptions([
-									'-c:v libvpx-vp9',
-									'-crf 30',
-									'-b:v 0',
-									'-c:a libopus',
-									'-b:a 128k'
-								])
-								.output(webmPath)
-								.on('end', resolve)
-								.on('error', reject)
-								.run()
-						})
-						filePaths.push(`/uploads/${webmFilename}`)
-					} catch (ffmpegError) {
-						console.warn('FFmpeg конвертация не удалась, сохраняем оригинал:', ffmpegError.message)
-						fs.writeFileSync(fallbackPath, file.buffer)
-						filePaths.push(`/uploads/${fallbackFilename}`)
-					} finally {
-						if (fs.existsSync(tempPath)) {
-							fs.unlinkSync(tempPath)
-						}
-					}
+					fs.writeFileSync(filePath, file.buffer)
+					filePaths.push(`/uploads/${filename}`)
 				}
 
 				res.json({ filePaths })
 			} catch (error) {
-				console.error('Ошибка при конвертации видео:', error)
+				console.error('Ошибка при загрузке видео:', error)
 				res
 					.status(500)
-					.json({ message: 'Ошибка при конвертации видео', error })
+					.json({ message: 'Ошибка при загрузке видео', error })
 			}
 		}
 	)
