@@ -2,10 +2,12 @@ import axios from 'axios'
 import cors from 'cors'
 import dotenv from 'dotenv'
 import express from 'express'
+import ffmpeg from 'fluent-ffmpeg'
 import fs from 'fs'
 import https from 'https'
 import morgan from 'morgan'
 import multer from 'multer'
+import os from 'os'
 import path from 'path'
 import sharp from 'sharp'
 
@@ -432,7 +434,7 @@ async function main() {
 		}
 	})
 
-	// Загрузка видео (без конвертации)
+	// Загрузка видео с конвертацией в WebM
 	app.post(
 		'/upload-video',
 		uploadVideo.array('videos', 10),
@@ -440,22 +442,51 @@ async function main() {
 			try {
 				const files = req.files
 				const filePaths = []
+				const uploadsDir = path.join(path.resolve(), 'uploads')
 
-				for (const file of files) {
-					const ext = path.extname(file.originalname).toLowerCase()
-					const videoFilename = `${Date.now()}-${file.originalname}`
-					const videoFilePath = path.join('uploads', videoFilename)
+				if (!fs.existsSync(uploadsDir)) {
+					fs.mkdirSync(uploadsDir, { recursive: true })
+				}
 
-					fs.writeFileSync(videoFilePath, file.buffer)
-					filePaths.push(`/uploads/${videoFilename}`)
+				for (let i = 0; i < files.length; i++) {
+					const file = files[i]
+					const tempExt = path.extname(file.originalname).toLowerCase() || '.mp4'
+					const tempFilename = `temp-${Date.now()}-${i}${tempExt}`
+					const tempPath = path.join(os.tmpdir(), tempFilename)
+					const webmFilename = `${Date.now()}-${i}.webm`
+					const webmPath = path.join(uploadsDir, webmFilename)
+
+					fs.writeFileSync(tempPath, file.buffer)
+
+					try {
+						await new Promise((resolve, reject) => {
+							ffmpeg(tempPath)
+								.outputOptions([
+									'-c:v libvpx-vp9',
+									'-crf 30',
+									'-b:v 0',
+									'-c:a libopus',
+									'-b:a 128k'
+								])
+								.output(webmPath)
+								.on('end', resolve)
+								.on('error', reject)
+								.run()
+						})
+						filePaths.push(`/uploads/${webmFilename}`)
+					} finally {
+						if (fs.existsSync(tempPath)) {
+							fs.unlinkSync(tempPath)
+						}
+					}
 				}
 
 				res.json({ filePaths })
 			} catch (error) {
-				console.error('Ошибка при загрузке видео:', error)
+				console.error('Ошибка при конвертации видео:', error)
 				res
 					.status(500)
-					.json({ message: 'Ошибка при загрузке видео', error })
+					.json({ message: 'Ошибка при конвертации видео', error })
 			}
 		}
 	)
