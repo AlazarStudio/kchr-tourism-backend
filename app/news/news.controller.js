@@ -56,11 +56,19 @@ export const createNewNews = asyncHandler(async (req, res) => {
 
 	// Извлекаем пути к файлам, если они передаются в виде объектов
 	const imagePaths = (images || []).map(image =>
-		typeof image === 'object' ? `/uploads/${image.rawFile.path}` : image
-	)
+		typeof image === 'object' && image?.rawFile?.path
+			? `/uploads/${image.rawFile.path}`
+			: typeof image === 'string'
+				? image
+				: null
+	).filter(Boolean)
 	const videoPaths = (videos || []).map(video =>
-		typeof video === 'object' ? `/uploads/${video.rawFile.path}` : video
-	)
+		typeof video === 'object' && video?.rawFile?.path
+			? `/uploads/${video.rawFile.path}`
+			: typeof video === 'string'
+				? video
+				: null
+	).filter(Boolean)
 
 	const news = await prisma.news.create({
 		data: {

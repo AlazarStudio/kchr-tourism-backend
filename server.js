@@ -440,7 +440,10 @@ async function main() {
 		uploadVideo.array('videos', 10),
 		async (req, res) => {
 			try {
-				const files = req.files
+				const files = req.files || []
+				if (files.length === 0) {
+					return res.status(400).json({ message: 'Файлы не загружены' })
+				}
 				const filePaths = []
 				const uploadsDir = path.join(path.resolve(), 'uploads')
 
@@ -448,13 +451,16 @@ async function main() {
 					fs.mkdirSync(uploadsDir, { recursive: true })
 				}
 
+				const baseTimestamp = Date.now()
 				for (let i = 0; i < files.length; i++) {
 					const file = files[i]
 					const tempExt = path.extname(file.originalname).toLowerCase() || '.mp4'
-					const tempFilename = `temp-${Date.now()}-${i}${tempExt}`
+					const tempFilename = `temp-${baseTimestamp}-${i}${tempExt}`
 					const tempPath = path.join(os.tmpdir(), tempFilename)
-					const webmFilename = `${Date.now()}-${i}.webm`
+					const webmFilename = `${baseTimestamp}-${i}.webm`
 					const webmPath = path.join(uploadsDir, webmFilename)
+					const fallbackFilename = `${baseTimestamp}-${i}${tempExt}`
+					const fallbackPath = path.join(uploadsDir, fallbackFilename)
 
 					fs.writeFileSync(tempPath, file.buffer)
 
@@ -474,6 +480,10 @@ async function main() {
 								.run()
 						})
 						filePaths.push(`/uploads/${webmFilename}`)
+					} catch (ffmpegError) {
+						console.warn('FFmpeg конвертация не удалась, сохраняем оригинал:', ffmpegError.message)
+						fs.writeFileSync(fallbackPath, file.buffer)
+						filePaths.push(`/uploads/${fallbackFilename}`)
 					} finally {
 						if (fs.existsSync(tempPath)) {
 							fs.unlinkSync(tempPath)
