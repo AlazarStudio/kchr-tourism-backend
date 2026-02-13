@@ -58,6 +58,7 @@ model News {
   date      DateTime
   text      String
   images    String[]
+  videos    String[]  @default([])
 }
 
 model Project {

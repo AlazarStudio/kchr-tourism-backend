@@ -55,6 +55,25 @@ const upload = multer({
 	}
 })
 
+// Multer для загрузки видео
+const uploadVideo = multer({
+	storage: storage,
+	limits: { fileSize: 1024 * 1024 * 100 }, // лимит 100MB
+	fileFilter: (req, file, cb) => {
+		const fileTypes = /mp4|webm|mov|avi|mkv/
+		const extname = fileTypes.test(
+			path.extname(file.originalname).toLowerCase()
+		)
+		const mimetype = /video\//.test(file.mimetype)
+
+		if (mimetype && extname) {
+			return cb(null, true)
+		} else {
+			cb(new Error('Ошибка: допустимы только видеофайлы (mp4, webm, mov)!'))
+		}
+	}
+})
+
 // Функция загрузки документов с проверкой типов файлов
 const uploadDocuments = multer({
 	storage: storage,
@@ -412,6 +431,34 @@ async function main() {
 				.json({ message: 'Ошибка при конвертации изображений', error })
 		}
 	})
+
+	// Загрузка видео (без конвертации)
+	app.post(
+		'/upload-video',
+		uploadVideo.array('videos', 10),
+		async (req, res) => {
+			try {
+				const files = req.files
+				const filePaths = []
+
+				for (const file of files) {
+					const ext = path.extname(file.originalname).toLowerCase()
+					const videoFilename = `${Date.now()}-${file.originalname}`
+					const videoFilePath = path.join('uploads', videoFilename)
+
+					fs.writeFileSync(videoFilePath, file.buffer)
+					filePaths.push(`/uploads/${videoFilename}`)
+				}
+
+				res.json({ filePaths })
+			} catch (error) {
+				console.error('Ошибка при загрузке видео:', error)
+				res
+					.status(500)
+					.json({ message: 'Ошибка при загрузке видео', error })
+			}
+		}
+	)
 
 	// Функция транслитерации русского текста в латиницу с заменой пробелов на подчеркивания
 	const transliterate = text => {

@@ -52,11 +52,14 @@ export const getNews = asyncHandler(async (req, res) => {
 // @route 	POST /api/news
 // @access  Private
 export const createNewNews = asyncHandler(async (req, res) => {
-	const { type, title, date, text, images } = req.body
+	const { type, title, date, text, images, videos } = req.body
 
 	// Извлекаем пути к файлам, если они передаются в виде объектов
-	const imagePaths = images.map(image =>
+	const imagePaths = (images || []).map(image =>
 		typeof image === 'object' ? `/uploads/${image.rawFile.path}` : image
+	)
+	const videoPaths = (videos || []).map(video =>
+		typeof video === 'object' ? `/uploads/${video.rawFile.path}` : video
 	)
 
 	const news = await prisma.news.create({
@@ -65,7 +68,8 @@ export const createNewNews = asyncHandler(async (req, res) => {
 			title,
 			date,
 			text,
-			images: imagePaths
+			images: imagePaths,
+			videos: videoPaths
 		}
 	})
 
@@ -104,7 +108,8 @@ export const createNewNewsWithParams = asyncHandler(async (req, res) => {
 			title,
 			date,
 			text,
-			images: imagePaths
+			images: imagePaths,
+			videos: []
 		}
 	})
 
@@ -115,7 +120,7 @@ export const createNewNewsWithParams = asyncHandler(async (req, res) => {
 // @route 	PUT /api/news/:id
 // @access  Private
 export const updateNews = asyncHandler(async (req, res) => {
-	const { type, title, date, text, images } = req.body
+	const { type, title, date, text, images, videos } = req.body
 
 	try {
 		const news = await prisma.news.update({
@@ -127,7 +132,8 @@ export const updateNews = asyncHandler(async (req, res) => {
 				title,
 				date,
 				text,
-				images
+				images: images || [],
+				videos: videos || []
 			}
 		})
 
