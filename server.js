@@ -58,9 +58,9 @@ const upload = multer({
 // Multer для загрузки видео
 const uploadVideo = multer({
 	storage: storage,
-	limits: { fileSize: 1024 * 1024 * 100 }, // лимит 100MB
+	limits: { fileSize: 1024 * 1024 * 512 }, // лимит 512MB
 	fileFilter: (req, file, cb) => {
-		const fileTypes = /mp4|webm|mov|avi|mkv/
+		const fileTypes = /mp4|webm|mov|avi|3gp|m4v|mkv/
 		const extname = fileTypes.test(
 			path.extname(file.originalname).toLowerCase()
 		)
