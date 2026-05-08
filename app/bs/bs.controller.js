@@ -56,10 +56,14 @@ export const getBS = asyncHandler(async (req, res) => {
 // @route 	POST /api/bs
 // @access  Private
 export const createNewBS = asyncHandler(async (req, res) => {
-	const { type, title, date, text, images } = req.body
+	const { type, title, date, text, images, documents } = req.body
 
-	const imagePaths = images.map(image =>
+	const imagePaths = (images || []).map(image =>
 		typeof image === 'object' ? `/uploads/${image.rawFile.path}` : image
+	)
+
+	const documentPaths = (documents || []).map(document =>
+		typeof document === 'object' ? `/uploads/${document.rawFile.path}` : document
 	)
 
 	const bs = await prisma.bS.create({
@@ -68,7 +72,8 @@ export const createNewBS = asyncHandler(async (req, res) => {
 			title,
 			date,
 			text,
-			images: imagePaths
+			images: imagePaths,
+			documents: documentPaths
 		}
 	})
 
@@ -79,14 +84,18 @@ export const createNewBS = asyncHandler(async (req, res) => {
 // @route 	PUT /api/bs/:id
 // @access  Private
 export const updateBS = asyncHandler(async (req, res) => {
-	const { type, title, date, text, images } = req.body
+	const { type, title, date, text, images, documents } = req.body
+
+	const documentPaths = (documents || []).map(document =>
+		typeof document === 'object' ? `/uploads/${document.rawFile.path}` : document
+	)
 
 	try {
 		const bs = await prisma.bS.update({
 			where: {
 				id: +req.params.id
 			},
-			data: { type, title, date, text, images }
+			data: { type, title, date, text, images, documents: documentPaths }
 		})
 
 		res.json(bs)

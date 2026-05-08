@@ -80,6 +80,7 @@ model BS {
   date      DateTime
   text      String
   images    String[]
+  documents String[] @default([])
 }
 
 model Event {
