@@ -90,6 +90,7 @@ model Event {
   isCurrent Boolean? @default(false) @map("is_current")
   title     String
   date      DateTime
+  dateEnd   DateTime? @map("date_end")
   city      String
   text      String
   images    String[]

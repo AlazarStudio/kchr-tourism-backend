@@ -33,7 +33,8 @@ export const getEvents = asyncHandler(async (req, res) => {
 	}
 
 	if (month && month >= 1 && month <= 12) {
-		const conditions = ['EXTRACT(MONTH FROM "date") = $1']
+		// событие, идущее с конца одного месяца по начало следующего, должно находиться по обоим месяцам
+		const conditions = ['$1 BETWEEN EXTRACT(MONTH FROM "date") AND EXTRACT(MONTH FROM COALESCE("date_end", "date"))']
 		const values = [month]
 
 		if (parsedFilter?.city) {
@@ -57,6 +58,7 @@ export const getEvents = asyncHandler(async (req, res) => {
 			isCurrent: '"is_current"',
 			title: '"title"',
 			date: '"date"',
+			dateEnd: '"date_end"',
 			city: '"city"'
 		}
 		const sortColumn = sortFieldMap[sortField] || '"created_at"'
@@ -74,6 +76,7 @@ export const getEvents = asyncHandler(async (req, res) => {
 				"is_current" AS "isCurrent",
 				"title",
 				"date",
+				"date_end" AS "dateEnd",
 				"city",
 				"text",
 				"images"
@@ -129,7 +132,7 @@ export const getEvent = asyncHandler(async (req, res) => {
 // @route 	POST /api/events
 // @access  Private
 export const createEvent = asyncHandler(async (req, res) => {
-	const { title, date, city, text, images } = req.body
+	const { title, date, dateEnd, city, text, images } = req.body
 
 	const imagePaths = images.map(image =>
 		typeof image === 'object' ? `/uploads/${image.rawFile.path}` : image
@@ -139,6 +142,7 @@ export const createEvent = asyncHandler(async (req, res) => {
 		data: {
 			title,
 			date,
+			dateEnd: dateEnd || null,
 			city,
 			text,
 			images: imagePaths
@@ -152,14 +156,14 @@ export const createEvent = asyncHandler(async (req, res) => {
 // @route 	PUT /api/events/:id
 // @access  Private
 export const updateEvent = asyncHandler(async (req, res) => {
-	const { isCurrent, title, date, city, text, images } = req.body
+	const { isCurrent, title, date, dateEnd, city, text, images } = req.body
 
 	try {
 		const event = await prisma.event.update({
 			where: {
 				id: +req.params.id
 			},
-			data: { isCurrent, title, date, city, text, images }
+			data: { isCurrent, title, date, dateEnd: dateEnd === '' ? null : dateEnd, city, text, images }
 		})
 
 		res.json(event)
